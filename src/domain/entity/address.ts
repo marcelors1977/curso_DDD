@@ -43,5 +43,4 @@ export default class Address {
             throw new Error('City is required');
         }
     };
-
 }

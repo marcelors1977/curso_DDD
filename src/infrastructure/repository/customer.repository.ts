@@ -11,10 +11,10 @@ export default class CustomerRepository implements CustomerRepositoryInterface {
             name: entity.name,
             active: entity.isActive(),
             rewardPoints: entity.rewardPoints,
-            street: entity.address.street,
-            number: entity.address.number,
-            city: entity.address.city,
-            zipcode: entity.address.zipcode
+            street: entity?.address?.street,
+            number: entity?.address?.number,
+            city: entity?.address?.city,
+            zipcode: entity?.address?.zipcode
         });
     }
 
@@ -49,39 +49,42 @@ export default class CustomerRepository implements CustomerRepositoryInterface {
             throw new Error("Customer not found");
         }
 
-        const customer = new Customer(id, customerModel.name);
-        const address = new Address(
-            customerModel.street, 
-            customerModel.number, 
-            customerModel.zipcode, 
-            customerModel.city);
-
-        customer.changeAddress(address);
-
-        return customer;
+        return this.rebuildCustomer(customerModel);
     }
 
     async findAll(): Promise<Customer[]> {
         const customerModels = await CustomerModel.findAll();
 
         const customers = customerModels.map(customerModel => {
-            let customer = new Customer(customerModel.id, customerModel.name);
-            customer.addRewardPoints(customerModel.rewardPoints);
-            const address = new Address(
-                customerModel.street,
-                customerModel.number,
-                customerModel.zipcode,
-                customerModel.city
-            );
-            customer.changeAddress(address);
-            if (customerModel.active) {
-                customer.activate();
-            }
-
-            return customer;
+            return this.rebuildCustomer(customerModel);
         });
 
         return customers;
+    }
+
+    rebuildCustomer(customerModel: CustomerModel): Customer {
+        
+        const customer = new Customer(customerModel.id, customerModel.name);
+            
+        customerModel && 
+        customerModel.street && 
+        customerModel.number && 
+        customerModel.city && 
+        customerModel.zipcode &&
+        customer.changeAddress(new Address(
+            customerModel.street,
+            customerModel.number,
+            customerModel.zipcode,
+            customerModel.city
+        ));
+    
+        customerModel && customerModel.rewardPoints && customer.addRewardPoints(customerModel.rewardPoints);
+        
+        if (customerModel.active) {
+            customer.activate();
+        }
+
+        return customer;
     }
 
 }

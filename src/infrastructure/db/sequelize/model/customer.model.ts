@@ -13,16 +13,16 @@ export default class CustomerModel extends Model {
     @Column({ allowNull: false })
     declare name: string;
 
-    @Column({ allowNull: false })
+    @Column
     declare street: string;
 
-    @Column({ allowNull: false })
+    @Column
     declare number: number;
 
-    @Column({ allowNull: false })
+    @Column
     declare zipcode: string;
     
-    @Column({ allowNull: false })
+    @Column
     declare city: string;
 
     @Column({ allowNull: false })

@@ -3,21 +3,13 @@ import CustomerModel from "../db/sequelize/model/customer.model";
 import OrderModel from "../db/sequelize/model/order.model";
 import OrderItemModel from "../db/sequelize/model/order-item.model";
 import ProductModel from "../db/sequelize/model/product.model";
-import CustomerRepository from "./customer.repository";
-import Customer from "../../domain/entity/customer";
-import Address from "../../domain/entity/address";
-import ProductRepository from "./product.repository";
-import Product from "../../domain/entity/product";
-import OrderItem from "../../domain/entity/order_item";
-import Order from "../../domain/entity/order";
 import OrderRepository from "./order.repository";
-import { v4 as uuid } from "uuid"
+import { createFakeCustomer, createFakeOrder, createFakeOrderItem } from "./_generator-fake-data";
+import CustomerRepository from "./customer.repository";
 
 describe("Customer unit test", () => {
 
     let sequelize: Sequelize;
-    let customer: Customer;
-    let products: Product[];
 
     beforeEach(async () => {
         sequelize = new Sequelize({
@@ -29,9 +21,6 @@ describe("Customer unit test", () => {
 
         sequelize.addModels([CustomerModel, OrderModel, OrderItemModel, ProductModel]);
         await sequelize.sync();
-
-        customer = await createCustomerEntity();
-        products = await createProductsEntity();
     });
 
     afterEach(async () => {
@@ -39,10 +28,11 @@ describe("Customer unit test", () => {
     });
     
     it("should create an order to a customer", async () => {
-        const ordemItem = createOrderItemEntity(products[0]);
-        const order = new Order(uuid(), customer.id, [ordemItem]);
+        const customerRepository = new CustomerRepository();
+        const customer = createFakeCustomer({withAddress: true, withActive: true, rewards: 10});
+        await customerRepository.create(customer);
 
-
+        const order = await createFakeOrder(customer.id);
         const orderRepository = new OrderRepository();
         await orderRepository.create(order);
 
@@ -55,29 +45,30 @@ describe("Customer unit test", () => {
             id: order.id,
             customer_id: customer.id,
             total: order.total(),
-            items: [
-                {
-                    id: ordemItem.id,
-                    name: ordemItem.name,
-                    price: ordemItem.price,
-                    quantity: ordemItem.quantity,
+            items: order.items.map(item => {
+                return {
+                    id: item.id,
+                    name: item.name,
+                    price: item.price,
+                    quantity: item.quantity,
                     order_id: order.id,
-                    product_id: ordemItem.productId
+                    product_id: item.productId
                 }
-            ]
+            })
         });
     });
 
     it("should update an order to a customer", async () => {
+        const customerRepository = new CustomerRepository();
+        const customer = createFakeCustomer({withAddress: true, withActive: true, rewards: 10});
+        await customerRepository.create(customer);
 
-        const ordemItem = createOrderItemEntity(products[0]);
-        const order = new Order(uuid(), customer.id, [ordemItem]);
- 
+        const order = await createFakeOrder(customer.id); 
         const orderRepository = new OrderRepository();  
         await orderRepository.create(order);
 
-        const ordemItem2 = createOrderItemEntity(products[1]);
-        const ordemItem3 = createOrderItemEntity(products[2]);
+        const ordemItem2 = await createFakeOrderItem();
+        const ordemItem3 = await createFakeOrderItem();
         order.items.push(ordemItem2, ordemItem3);
 
         await orderRepository.update(order);
@@ -105,7 +96,7 @@ describe("Customer unit test", () => {
         
         expect(orderModelFound.toJSON()).toStrictEqual(orderWithOrderIdInItems);
 
-        const ordemItem4 = createOrderItemEntity(products[1]);
+        const ordemItem4 = await createFakeOrderItem();
 
         order.items.splice(0, 2, ordemItem4);
         
@@ -136,85 +127,53 @@ describe("Customer unit test", () => {
     });
 
     it("should find an order to a customer", async () => {
-        const ordemItem = createOrderItemEntity(products[0]);
-        const order = new Order(uuid(), customer.id, [ordemItem]);
+        const customerRepository = new CustomerRepository();
+        const customer = createFakeCustomer({withAddress: true, withActive: true, rewards: 10});
+        await customerRepository.create(customer);
 
+        const order = await createFakeOrder(customer.id);
         const orderRepository = new OrderRepository();
         await orderRepository.create(order);
 
-        const orderFound = await OrderModel.findOne({
-            where: { id: order.id },
-            include: ["items"]
-        });
+        const orderFound = await orderRepository.find(order.id);
 
-        expect(orderFound.toJSON()).toStrictEqual({
-            id: order.id,
-            customer_id: customer.id,
-            total: order.total(),
-            items: [
-                {
-                    id: ordemItem.id,
-                    name: ordemItem.name,
-                    price: ordemItem.price,
-                    quantity: ordemItem.quantity,
-                    order_id: order.id,
-                    product_id: ordemItem.productId
-                }
-            ]
-        });
+        expect(orderFound).toStrictEqual(order);
     });
 
-    it("should find all orders to a customer", async () => {
-        const ordemItem1 = createOrderItemEntity(products[0]);
-        const order1 = new Order(uuid(), customer.id, [ordemItem1]);
+    it("should find all orders created", async () => {
+        const customerRepository = new CustomerRepository();
+        const customer = createFakeCustomer({withAddress: true, withActive: true, rewards: 10});
+        await customerRepository.create(customer);
 
-        const ordemItem2 = createOrderItemEntity(products[1]);
-        const order2 = new Order(uuid(), customer.id, [ordemItem2]);
-
+        const order1 = await createFakeOrder(customer.id);
+        const order2 = await createFakeOrder(customer.id);
         const orderRepository = new OrderRepository();
         await orderRepository.create(order1);
         await orderRepository.create(order2);
 
-        const ordersFound = await OrderModel.findAll({
-            where: { customer_id: customer.id },
-            include: ["items"]
-        }).then(orders => orders.map(order => order.toJSON()));
-    
-        expect(ordersFound).toContainEqual(
-            expect.objectContaining({
+        const ordersFound = await orderRepository.findAll();   
+        
+        expect(ordersFound.map(a => {
+            return {
+                id: a.id,
+                customer_id: a.customerId,
+                total: a.total(),
+                items: a.items.sort((a, b) => a.price - b.price)
+            }
+        })).toStrictEqual([
+            {
                 id: order1.id,
-                customer_id: customer.id,
+                customer_id: order1.customerId,
                 total: order1.total(),
-                items: [
-                    {
-                        id: ordemItem1.id,
-                        name: ordemItem1.name,
-                        price: ordemItem1.price,
-                        quantity: ordemItem1.quantity,
-                        order_id: order1.id,
-                        product_id: ordemItem1.productId
-                    }
-                ]
-            })
-        );
-
-        expect(ordersFound).toContainEqual(
-            expect.objectContaining({
+                items: order1.items.sort((a, b) => a.price - b.price)
+            },
+            {
                 id: order2.id,
-                customer_id: customer.id,
+                customer_id: order2.customerId,
                 total: order2.total(),
-                items: [
-                    {
-                        id: ordemItem2.id,
-                        name: ordemItem2.name,
-                        price: ordemItem2.price,
-                        quantity: ordemItem2.quantity,
-                        order_id: order2.id,
-                        product_id: ordemItem2.productId
-                    }
-                ]
-            })
-        );
+                items: order2.items.sort((a, b) => a.price - b.price)
+            }
+        ]);
 
         expect(ordersFound).toHaveLength(2);
     });
@@ -224,40 +183,49 @@ describe("Customer unit test", () => {
 
         await expect(orderRepository.find("aaaaa")).rejects.toThrow("Order not found");
     });
-});
 
-async function createCustomerEntity(): Promise<Customer> {
-    const customerRepository = new CustomerRepository();
-    const customer = new Customer(uuid(), "Customer 1");
-    const address = new Address("Street", 1, "Zip", "City");
-    customer.changeAddress(address);
-    
-    await customerRepository.create(customer);
-    return customer;
-}
+    it("when no orders found then should returns a empty array", async () => {
+        const orderRepository = new OrderRepository();
 
-async function createProductsEntity(): Promise<Product[]> {
-    const productRepository = new ProductRepository();
+        const ordersFound = await orderRepository.findAll();
 
-    const products = [ 
-        new Product(uuid(), "Product 1", 10),
-        new Product(uuid(), "Product 2", 20),
-        new Product(uuid(), "Product 3", 30),
-     ];
-
-    products.forEach(async product => {
-        await productRepository.create(product);
+        expect(ordersFound).toStrictEqual([]);
     });
 
-    return products;
-}
+    it("should find all orders to a specific customer", async () => {
+        const customerRepository = new CustomerRepository();
+        const customer1 = createFakeCustomer();
+        await customerRepository.create(customer1);
+        const order1 = await createFakeOrder(customer1.id);
 
-function createOrderItemEntity(product: Product): OrderItem {
-    return new OrderItem(
-        uuid(),
-        product.name,
-        product.price,
-        product.id,
-        Math.trunc(Math.random() * 10 + 1) 
-    );
-}
+        const customer2 = createFakeCustomer({withAddress: true, withActive: true});
+        await customerRepository.create(customer2);
+        const order2 = await createFakeOrder(customer2.id);
+
+        const orderRepository = new OrderRepository();
+        await orderRepository.create(order1);
+        await orderRepository.create(order2);
+
+        const ordersToCustomerFound = await orderRepository.findAllOrdersByCustomerId(customer1.id);
+
+        expect(ordersToCustomerFound.map(order => {
+            return {
+                id: order.id,
+                customer_id: order.customerId,
+            }
+        })).toContainEqual({
+                id: order1.id,
+                customer_id: order1.customerId,
+        });
+
+        expect(ordersToCustomerFound.map(order => {
+            return {
+                id: order.id,
+                customer_id: order.customerId,
+            }
+        })).not.toContainEqual({            
+                id: order2.id,
+                customer_id: order2.customerId,
+        });
+    });
+});

@@ -10,6 +10,7 @@
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "@faker-js/faker": "^6.3.1",
     "@swc/cli": "^0.1.55",
     "@swc/core": "^1.2.148",
     "@swc/jest": "^0.2.20",

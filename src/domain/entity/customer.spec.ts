@@ -15,6 +15,11 @@ describe("Customer unit test", () => {
         }).toThrowError("Name is required");
     });
 
+    it("should create a new Customer without address", () => {
+        const customer = new Customer("123", "Jane");
+        expect(customer.name).toBe("Jane");
+    });
+
     it("should change name", () => {
         const customer = new Customer("123", "John");
         customer.changeName("Jane");

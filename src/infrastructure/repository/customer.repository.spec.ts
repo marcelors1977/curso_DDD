@@ -1,8 +1,7 @@
 import { Sequelize } from "sequelize-typescript";
 import CustomerModel from "../db/sequelize/model/customer.model";
-import Customer from "../../domain/entity/customer";
-import Address from "../../domain/entity/address";
 import CustomerRepository from "./customer.repository";
+import { createFakeCustomer, newFakeAddressEntity } from "./_generator-fake-data";
 
 describe("Customer unit test", () => {
 
@@ -26,8 +25,8 @@ describe("Customer unit test", () => {
     
     it("should create a customer", async () => {
         const customerRepository = new CustomerRepository();
-        const customer = new Customer("1", "Customer 1");
-        const address = new Address("Itupava", 1, "80000-000", "Curitiba");
+        const customer = createFakeCustomer();
+        const address = newFakeAddressEntity();
 
         customer.changeAddress(address);
 
@@ -35,7 +34,7 @@ describe("Customer unit test", () => {
 
         const customerModel = await CustomerModel.findOne({
             where: {
-                id: "1"
+                id: customer.id
             }
         });
 
@@ -48,28 +47,49 @@ describe("Customer unit test", () => {
             number: address.number,
             city: address.city,
             zipcode: address.zipcode
+        });
+    });
+
+    it("should create a customer without address", async () => {
+        const customerRepository = new CustomerRepository();
+        const customer = createFakeCustomer();
+
+        await customerRepository.create(customer);
+
+        const customerModel = await CustomerModel.findOne({
+            where: {
+                id: customer.id
+            }
+        });
+
+        expect(customerModel.toJSON()).toStrictEqual({
+            id: customer.id,
+            name: customer.name,
+            active: customer.isActive(),
+            rewardPoints: customer.rewardPoints,
+            street: null,
+            number: null,
+            city: null,
+            zipcode: null
         });
     });
 
     it("should update a customer", async () => {
         const customerRepository = new CustomerRepository();
-        const customer = new Customer("1", "Customer 1");
-        const address = new Address("Itupava", 1, "80000-000", "Curitiba");
-
-        customer.changeAddress(address);
-
+        const customer = createFakeCustomer();
         await customerRepository.create(customer);
 
-        const address2 = new Address("Itupava", 1, "80000-000", "Curitiba");
-
+        const address = newFakeAddressEntity();
         customer.changeName("Customer 2");
-        customer.changeAddress(address2);
+        customer.changeAddress(address);
+        customer.addRewardPoints(10);
+        customer.activate();
 
         await customerRepository.update(customer);
 
         const customerModel = await CustomerModel.findOne({
             where: {
-                id: "1"
+                id: customer.id
             }
         });
 
@@ -85,20 +105,25 @@ describe("Customer unit test", () => {
         });
     });
 
-    it("should find a customer", async () => {
+    it("should find a customer without address", async () => {
         const customerRepository = new CustomerRepository();
-        const customer = new Customer("1", "Customer 1");
-        const address = new Address("Itupava", 1, "80000-000", "Curitiba");
-
-        customer.changeAddress(address);
-
+        const customer = createFakeCustomer({rewards: 10});
         await customerRepository.create(customer);
 
-        const customerFound = await customerRepository.find("1");
+        const customerFound = await customerRepository.find(customer.id);
 
         expect(customer).toStrictEqual(customerFound);
     });
 
+    it("should find an active customer", async () => {
+        const customerRepository = new CustomerRepository();
+        const customer = createFakeCustomer({rewards: 10, withAddress: true, withActive: true});
+        await customerRepository.create(customer);
+
+        const customerFound = await customerRepository.find(customer.id);
+
+        expect(customer).toStrictEqual(customerFound);
+    });
 
     it("should trhow an error when customer not found", async () => {
         const customerRepository = new CustomerRepository();
@@ -110,24 +135,38 @@ describe("Customer unit test", () => {
 
     it("should find all customers", async () => {
         const customerRepository = new CustomerRepository();
-        const customer1 = new Customer("1", "Customer 1");
-        const address1 = new Address("Itupava", 1, "80000-000", "Curitiba");
-        const customer2 = new Customer("2", "Customer 2");
-        const address2 = new Address("Itupava", 1, "80000-000", "Curitiba");
-
-        customer1.changeAddress(address1);
-        customer1.addRewardPoints(10);
-        customer1.activate();
-        customer2.changeAddress(address2);
-        customer2.addRewardPoints(20);
-
+        const customer1 = createFakeCustomer({withAddress: true, rewards: 10, withActive: true});
         await customerRepository.create(customer1);
+        const customer2 = createFakeCustomer({rewards: 20});
         await customerRepository.create(customer2);
-
         const customers = await customerRepository.findAll();
 
         expect(customers).toHaveLength(2);
-        expect(customers).toContainEqual(customer1);
-        expect(customers).toContainEqual(customer2);
+       
+        expect(customers.map(a => { 
+            return  {
+                id: a.id,
+                name: a.name,
+                active: a.isActive(),
+                rewardPoints: a.rewardPoints,
+                address: a.address
+            }
+        })).toEqual([
+            {
+                id: customer1.id,
+                name: customer1.name,
+                active: customer1.isActive(),
+                rewardPoints: customer1.rewardPoints,
+                address: customer1.address
+            },
+            {
+                id: customer2.id,
+                name: customer2.name,
+                active: customer2.isActive(),
+                rewardPoints: customer2.rewardPoints,
+                address: customer2.address
+            }
+
+        ])
     });
 });
