@@ -149,7 +149,12 @@ describe("Customer unit test", () => {
                 name: a.name,
                 active: a.isActive(),
                 rewardPoints: a.rewardPoints,
-                address: a.address
+                address: typeof a.address === "undefined" ? null : {
+                    street: a.address.street,
+                    number: a.address.number,
+                    city: a.address.city,
+                    zipcode: a.address.zipcode
+                }
             }
         })).toEqual([
             {
@@ -157,14 +162,19 @@ describe("Customer unit test", () => {
                 name: customer1.name,
                 active: customer1.isActive(),
                 rewardPoints: customer1.rewardPoints,
-                address: customer1.address
+                address: {
+                    street: customer1.address.street,
+                    number: customer1.address.number,
+                    city: customer1.address.city,
+                    zipcode: customer1.address.zipcode
+                }
             },
             {
                 id: customer2.id,
                 name: customer2.name,
                 active: customer2.isActive(),
                 rewardPoints: customer2.rewardPoints,
-                address: customer2.address
+                address: null
             }
 
         ])
