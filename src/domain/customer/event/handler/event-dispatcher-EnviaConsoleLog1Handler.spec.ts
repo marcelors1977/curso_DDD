@@ -1,4 +1,3 @@
-
 import EnviaConsoleLog1Handler from "./envia-consoleLog1-when-customer-created.event";
 import CustomerCreatedEvent from "../customer-created.event";
 import EventDispatcher from "../../../_shared/event/event-dispatcher";

@@ -1,3 +1,5 @@
+import OrderItemInterface from "./order-item.interface";
+
 export default class OrderItem {
     private _id: string;
     private _productId: string;
@@ -5,7 +7,10 @@ export default class OrderItem {
     private _price: number;
     private _quantity: number = 0;
     
-    constructor(id: string, name: string, price: number, productId: string, quantity: number) {
+    // constructor(id: string, name: string, price: number, productId: string, quantity: number) {
+    constructor(props: OrderItemInterface) {
+        const { id, name, price, productId, quantity } = props;
+        
         this._id = id;
         this._name = name;
         this._price = price;

@@ -1,4 +1,5 @@
 import Address from "../value-object/address";
+import CustomerInterface from "./customer.interface";
 
 export default class Customer {
     private _id: string;
@@ -7,7 +8,10 @@ export default class Customer {
     private _active: boolean = false;
     private _rewardPoints: number = 0;
 
-    constructor(id: string, name: string) {
+    // constructor(id: string, name: string) {
+    constructor(props: CustomerInterface) {
+        const { id, name } = props;
+        
         this._id = id;
         this._name = name;
         this.validate();      

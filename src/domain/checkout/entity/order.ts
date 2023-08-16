@@ -1,3 +1,4 @@
+import OrderInterface from "./order.interface";
 import OrdemItem from "./order_item";
 
 export default class Order {
@@ -6,7 +7,10 @@ export default class Order {
     private _items: OrdemItem[] = [];
     private _total: number;
 
-    constructor(id: string, customerId: string, items: OrdemItem[]) {
+    // constructor(id: string, customerId: string, items: OrdemItem[]) {
+    constructor(props: OrderInterface) {
+        const { id, customerId, items } = props;
+
         this._id = id;
         this._customerId = customerId;
         this._items = items;

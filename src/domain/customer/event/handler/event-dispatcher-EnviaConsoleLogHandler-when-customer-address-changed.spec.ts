@@ -1,4 +1,3 @@
-
 import EventDispatcher from "../../../_shared/event/event-dispatcher";
 import CustomerChangedAddressEvent from "../customer-change-address.event";
 import EnviaConsoleLogHandler from "./envia-consoleLog-when-customer-address-changed.event";

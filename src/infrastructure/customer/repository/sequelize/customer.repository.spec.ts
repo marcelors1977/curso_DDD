@@ -2,6 +2,7 @@ import { Sequelize } from "sequelize-typescript";
 import CustomerModel from "./customer.model";
 import CustomerRepository from "./customer.repository";
 import { createFakeCustomer, newFakeAddressEntity } from "../../../_generator-fake-data";
+import CustomerMapper from "../../mapper/customer.mapper";
 
 describe("Customer unit test", () => {
 
@@ -29,7 +30,6 @@ describe("Customer unit test", () => {
         const address = newFakeAddressEntity();
 
         customer.changeAddress(address);
-
         await customerRepository.create(customer);
 
         const customerModel = await CustomerModel.findOne({
@@ -38,16 +38,9 @@ describe("Customer unit test", () => {
             }
         });
 
-        expect(customerModel.toJSON()).toStrictEqual({
-            id: customer.id,
-            name: customer.name,
-            active: customer.isActive(),
-            rewardPoints: customer.rewardPoints,
-            street: address.street,
-            number: address.number,
-            city: address.city,
-            zipcode: address.zipcode
-        });
+        const customerMappedToModel = new CustomerMapper().domainToModel(customer);
+
+        expect(customerModel.toJSON()).toStrictEqual(customerMappedToModel);
     });
 
     it("should create a customer without address", async () => {
@@ -93,16 +86,9 @@ describe("Customer unit test", () => {
             }
         });
 
-        expect(customerModel.toJSON()).toStrictEqual({
-            id: customer.id,
-            name: customer.name,
-            active: customer.isActive(),
-            rewardPoints: customer.rewardPoints,
-            street: address.street,
-            number: address.number,
-            city: address.city,
-            zipcode: address.zipcode
-        });
+        const customerMappedToModel = new CustomerMapper().domainToModel(customer);
+
+        expect(customerModel.toJSON()).toStrictEqual(customerMappedToModel);
     });
 
     it("should find a customer without address", async () => {

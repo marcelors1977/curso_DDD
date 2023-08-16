@@ -6,15 +6,16 @@ import OrderRepository from "./order.repository";
 import { createFakeCustomer, createFakeOrder, createFakeOrderItem } from "../../../_generator-fake-data";
 import OrderModel from "./order.model";
 import CustomerRepository from "../../../customer/repository/sequelize/customer.repository";
+import OrderMapper from "../../mapper/order.mapper";
 
-describe("Customer unit test", () => {
+describe("Order repository unit test", () => {
 
     let sequelize: Sequelize;
 
     beforeEach(async () => {
         sequelize = new Sequelize({
             dialect: "sqlite",
-            storage: ":memory:",
+            storage: "db.sqlite",
             logging: false,
             sync: {force: true}
         });
@@ -41,21 +42,11 @@ describe("Customer unit test", () => {
             include: ["items"]
         });
 
-        expect(orderModel.toJSON()).toStrictEqual({
-            id: order.id,
-            customer_id: customer.id,
-            total: order.total(),
-            items: order.items.map(item => {
-                return {
-                    id: item.id,
-                    name: item.name,
-                    price: item.price,
-                    quantity: item.quantity,
-                    order_id: order.id,
-                    product_id: item.productId
-                }
-            })
-        });
+        const orderMapper = new OrderMapper();
+
+        let orderMappedToModel = orderMapper.domainToModel(order);
+
+        expect(orderModel.toJSON()).toStrictEqual(orderMappedToModel);
     });
 
     it("should update an order to a customer", async () => {
@@ -67,8 +58,8 @@ describe("Customer unit test", () => {
         const orderRepository = new OrderRepository();  
         await orderRepository.create(order);
 
-        const ordemItem2 = await createFakeOrderItem();
-        const ordemItem3 = await createFakeOrderItem();
+        const ordemItem2 =  await createFakeOrderItem();
+        const ordemItem3 =  await createFakeOrderItem();
         order.items.push(ordemItem2, ordemItem3);
 
         await orderRepository.update(order);
@@ -78,23 +69,11 @@ describe("Customer unit test", () => {
             include: ["items"]
         });
 
-        const orderWithOrderIdInItems = new Object({ 
-            id: order.id,
-            customer_id: customer.id,
-            total: order.total(),
-            items: order.items.map(item => {
-                return {
-                    id: item.id,
-                    name: item.name,
-                    price: item.price,
-                    quantity: item.quantity,
-                    order_id: order.id,
-                    product_id: item.productId
-                }
-            })
-        });
+        const orderMapper = new OrderMapper();
+
+        let orderMappedToModel = orderMapper.domainToModel(order);
         
-        expect(orderModelFound.toJSON()).toStrictEqual(orderWithOrderIdInItems);
+        expect(orderModelFound.toJSON()).toStrictEqual(orderMappedToModel);
 
         const ordemItem4 = await createFakeOrderItem();
 
@@ -107,23 +86,12 @@ describe("Customer unit test", () => {
             include: ["items"]
         });
 
-        const orderWithOrderIdInItems2 = new Object({ 
-            id: order.id,
-            customer_id: customer.id,
-            total: order.total(),
-            items: order.items.map(item => {
-                return {
-                    id: item.id,
-                    name: item.name,
-                    price: item.price,
-                    quantity: item.quantity,
-                    order_id: order.id,
-                    product_id: item.productId
-                }
-            })
-        });
+        const orderTeste = orderMapper.domainToModel(order);
+        console.log(orderTeste);
 
-        expect(orderModelFound2.toJSON()).toStrictEqual(orderWithOrderIdInItems2);
+        orderMappedToModel = orderMapper.domainToModel(order);
+
+        expect(orderModelFound2.toJSON()).toStrictEqual(orderMappedToModel);
     });
 
     it("should find an order to a customer", async () => {
@@ -151,7 +119,7 @@ describe("Customer unit test", () => {
         await orderRepository.create(order1);
         await orderRepository.create(order2);
 
-        const ordersFound = await orderRepository.findAll();   
+        const ordersFound = await orderRepository.findAll(); 
         
         expect(ordersFound.map(a => {
             return {

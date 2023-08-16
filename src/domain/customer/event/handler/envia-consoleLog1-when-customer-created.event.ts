@@ -1,4 +1,3 @@
-
 import EventHandlerInterface from "../../../_shared/event/event-handler.interface";
 import CustomerCreatedEvent from "../customer-created.event";
 

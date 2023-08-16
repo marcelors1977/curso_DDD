@@ -1,10 +1,13 @@
+import AddressInterface from "./address.interface";
+
 export default class Address {
     _street: string = "";
     _number: number = 0;
     _zip: string = "";
     _city: string = "";
 
-    constructor(street: string, number: number, zip: string, city: string) {
+    constructor(props: AddressInterface) {
+        const { street, number, zip, city } = props;
         this._street = street;
         this._number = number;
         this._zip = zip;
@@ -43,4 +46,8 @@ export default class Address {
             throw new Error('City is required');
         }
     };
+
+    static isValidRequiredFields(address: AddressInterface): boolean {
+        return address.street && address.number && address.zip && address.city && true
+    }
 }

@@ -15,7 +15,7 @@ export default class OrderService {
             throw new Error('Order needs to have almost one item');
         }
 
-        const order = new Order(uuid(), customer.id, items);
+        const order = new Order({id: uuid(), customerId: customer.id, items: items});
         customer.addRewardPoints(order.total()/2);
         return order
     }

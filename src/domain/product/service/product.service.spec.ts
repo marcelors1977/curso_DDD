@@ -4,9 +4,8 @@ import ProductService from "./product.service";
 describe("Product service unit test", () => {
 
     it("should change prices os all products", () => {
-       
-        const product1 = new Product("product1", "Product 1", 10);
-        const product2 = new Product("product2", "Product 2", 20);
+        const product1 = new Product({id: "product1", name: "Product 1", price: 10});
+        const product2 = new Product({id: "product2", name: "Product 2", price: 20});
         const products = [product1, product2];
 
         ProductService.increasePrice(products, 100);
