@@ -1,24 +1,15 @@
 import Order from "../../../../domain/checkout/entity/order";
 import OrderItem from "../../../../domain/checkout/entity/order_item";
 import OrderRepositoryInterface from "../../../../domain/checkout/repository/order-repository.interface";
+import OrderMapper from "../../mapper/order.mapper";
 import OrderItemModel from "./order-item.model";
 import OrderModel from "./order.model";
 
 export default class OrderRepository implements OrderRepositoryInterface {
     async create(entity: Order): Promise<void> {
         try {
-            await OrderModel.create({
-                id: entity.id,
-                customer_id: entity.customerId,
-                total: entity.total(),
-                items: entity.items.map(item => ({
-                    id: item.id,
-                    name: item.name,
-                    price: item.price,
-                    quantity: item.quantity,
-                    product_id: item.productId
-                }))
-            },
+            await OrderModel.create(
+                new OrderMapper().domainToModel(entity),
                 {
                     include: [{ model: OrderItemModel }]
                 });
@@ -29,10 +20,22 @@ export default class OrderRepository implements OrderRepositoryInterface {
     }
 
     async update(entity: Order): Promise<void> {
-        const orderModelFound = await this.find(entity.id);
-        
-        const orderItemsToBeDeleted = orderModelFound.items.filter(item => !entity.items.includes(item));
-        const orderItemsToBeAdded = entity.items.filter(item => !orderModelFound.items.includes(item));
+        const orderMapper = new OrderMapper();
+        const {
+            id: entityOrderId, 
+            items: entityOrderItems, 
+            ...entityOrderOthers
+        } = orderMapper.domainToModel(entity);
+
+        const itemsIdOfOrderModelFound = (
+            await this.find(entityOrderId)
+        ).items;
+       
+        const orderItemsToBeDeleted = itemsIdOfOrderModelFound
+            .filter(item => !entityOrderItems.includes(item));
+
+        const orderItemsToBeAdded = entityOrderItems
+            .filter((item: OrderItem) => !itemsIdOfOrderModelFound.includes(item));
 
         try {
             await OrderItemModel.destroy({
@@ -42,25 +45,17 @@ export default class OrderRepository implements OrderRepositoryInterface {
             });
 
             await OrderItemModel.bulkCreate(
-                orderItemsToBeAdded.map(item => ({
-                    id: item.id,
-                    name: item.name,
-                    price: item.price,
-                    quantity: item.quantity,
-                    product_id: item.productId,
-                    order_id: entity.id
+                orderItemsToBeAdded.map((item: any) => ({
+                    ...item,
+                    order_id: entityOrderId
                 }))
             );
 
             await OrderModel.update(
-                {
-                    id: entity.id,
-                    customer_id: entity.customerId,
-                    total: entity.total(),
-                },
+                entityOrderOthers,
                 {
                     where: {
-                        id: entity.id
+                        id: entityOrderId
                     }
                 }
             );
@@ -85,17 +80,8 @@ export default class OrderRepository implements OrderRepositoryInterface {
             throw new Error("Order not found");
         }
 
-        return new Order(
-            orderModel.id, 
-            orderModel.customer_id, 
-            orderModel.items.map(item => (new OrderItem(
-                item.id,
-                item.name,
-                item.price,
-                item.product_id,
-                item.quantity
-            )))
-        );
+        const orderMapper = new OrderMapper();
+        return orderMapper.modelToDomain(orderModel);
     }
 
     async findAll(): Promise<Order[]> {
@@ -108,16 +94,10 @@ export default class OrderRepository implements OrderRepositoryInterface {
             console.log(error);
         }
 
-        return orderModels.map(orderModel => {
-            const ordemItems = orderModel.items.map(item => (new OrderItem(
-                item.id,
-                item.name,
-                item.price,
-                item.product_id,
-                item.quantity
-            )));
+        const orderMapper = new OrderMapper();
 
-            return new Order(orderModel.id, orderModel.customer_id, ordemItems);
+        return orderModels.map(orderModel => {
+            return orderMapper.modelToDomain(orderModel);
         });
     }
 
@@ -134,16 +114,10 @@ export default class OrderRepository implements OrderRepositoryInterface {
             console.log(error);
         }
 
-        return orderModels.map(orderModel => {
-            const ordemItems = orderModel.items.map(item => (new OrderItem(
-                item.id,
-                item.name,
-                item.price,
-                item.product_id,
-                item.quantity
-            )));
+        const orderMapper = new OrderMapper();
 
-            return new Order(orderModel.id, orderModel.customer_id, ordemItems);
+        return orderModels.map(orderModel => {
+           return orderMapper.modelToDomain(orderModel);
         });
     }
 }
