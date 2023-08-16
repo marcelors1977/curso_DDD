@@ -80,8 +80,7 @@ export default class OrderRepository implements OrderRepositoryInterface {
             throw new Error("Order not found");
         }
 
-        const orderMapper = new OrderMapper();
-        return orderMapper.modelToDomain(orderModel);
+        return new OrderMapper().modelToDomain(orderModel);
     }
 
     async findAll(): Promise<Order[]> {

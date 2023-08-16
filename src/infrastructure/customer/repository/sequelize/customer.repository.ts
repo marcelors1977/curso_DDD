@@ -6,20 +6,21 @@ import CustomerModel from "./customer.model";
 export default class CustomerRepository implements CustomerRepositoryInterface {
 
     async create(entity: Customer): Promise<void> {
-        const customerMapper = new CustomerMapper();
-        await CustomerModel.create(customerMapper.domainToModel(entity));
+        await CustomerModel.create(new CustomerMapper().domainToModel(entity));
     }
 
     async update(entity: Customer): Promise<void> {
         const customerMapper = new CustomerMapper();
-        const {id, ...customerModel} = customerMapper.domainToModel(entity);
+        const {id: entityId, ...customerModel} = customerMapper.domainToModel(entity);
 
-        await CustomerModel.update(customerModel,
-        {
-            where: {
-                id: entity.id
+        await CustomerModel.update(
+            customerModel,
+            {
+                where: {
+                    id: entityId
+                }
             }
-        });
+        );
     }
 
     async find(id: string): Promise<Customer> {
@@ -36,9 +37,7 @@ export default class CustomerRepository implements CustomerRepositoryInterface {
             throw new Error("Customer not found");
         }
 
-        const customerMapper = new CustomerMapper();
-
-        return customerMapper.modelToDomain(customerModel);
+        return new CustomerMapper().modelToDomain(customerModel);
 
     }
 
